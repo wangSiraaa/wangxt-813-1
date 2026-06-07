@@ -3,6 +3,7 @@ package com.municipal.tree.service;
 import com.municipal.tree.dto.AuditRequest;
 import com.municipal.tree.dto.CompletionPhotoRequest;
 import com.municipal.tree.dto.PruningApplicationRequest;
+import com.municipal.tree.dto.SignOffRequest;
 import com.municipal.tree.entity.*;
 import com.municipal.tree.enums.ApplicationStatus;
 import com.municipal.tree.enums.TreeCategory;
@@ -174,6 +175,52 @@ public class PruningApplicationService {
         return pruningApplicationRepository.save(application);
     }
 
+    public PruningApplication submitSignOff(Long applicationId, SignOffRequest request) {
+        PruningApplication application = pruningApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(404, "申请不存在"));
+
+        if (application.getStatus() != ApplicationStatus.COMPLETED &&
+            application.getStatus() != ApplicationStatus.PHOTO_SUPPLEMENT_REQUESTED) {
+            throw new BusinessException(400, "当前状态不允许提交签收");
+        }
+
+        application.setSignOffPerson(request.getSignOffPerson());
+        application.setSignOffTime(LocalDateTime.now());
+        application.setSignOffRejectReason(null);
+        application.setStatus(ApplicationStatus.SIGN_OFF_SUBMITTED);
+
+        return pruningApplicationRepository.save(application);
+    }
+
+    public PruningApplication recordArrivalTime(Long applicationId) {
+        PruningApplication application = pruningApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(404, "申请不存在"));
+
+        if (application.getStatus() != ApplicationStatus.SIGN_OFF_SUBMITTED) {
+            throw new BusinessException(400, "当前状态不允许记录到场时间");
+        }
+
+        application.setArrivalTime(LocalDateTime.now());
+        application.setStatus(ApplicationStatus.ARRIVAL_RECORDED);
+
+        return pruningApplicationRepository.save(application);
+    }
+
+    public PruningApplication requestPhotoSupplement(Long applicationId, SignOffRequest request) {
+        PruningApplication application = pruningApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(404, "申请不存在"));
+
+        if (application.getStatus() != ApplicationStatus.ARRIVAL_RECORDED &&
+            application.getStatus() != ApplicationStatus.SIGN_OFF_SUBMITTED) {
+            throw new BusinessException(400, "当前状态不允许要求补充照片");
+        }
+
+        application.setSignOffRejectReason(request.getRejectReason());
+        application.setStatus(ApplicationStatus.PHOTO_SUPPLEMENT_REQUESTED);
+
+        return pruningApplicationRepository.save(application);
+    }
+
     public CompletionPhoto uploadCompletionPhoto(Long applicationId, CompletionPhotoRequest request) {
         PruningApplication application = pruningApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(404, "申请不存在"));
@@ -191,7 +238,8 @@ public class PruningApplicationService {
         PruningApplication application = pruningApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(404, "申请不存在"));
 
-        if (application.getStatus() != ApplicationStatus.COMPLETED) {
+        if (application.getStatus() != ApplicationStatus.COMPLETED &&
+            application.getStatus() != ApplicationStatus.ARRIVAL_RECORDED) {
             throw new BusinessException(400, "当前状态不允许关闭许可");
         }
 

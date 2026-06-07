@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本系统是一套市政行道树修剪许可审批管理平台，实现树木修剪申请的提交、审批、施工、验收全流程管理。系统支持普通树木和古树名木的差异化审批流程，占道施工冲突检测，以及完工照片上传验证等核心业务功能。
+本系统是一套市政行道树修剪许可审批管理平台，实现树木修剪申请的提交、审批、施工、验收全流程管理。系统支持普通树木和古树名木的差异化审批流程，占道施工冲突检测，完工照片上传验证，以及签收确认流程。
 
 ## 核心业务规则
 
@@ -17,6 +17,14 @@
 ### 3. 完工照片验证规则
 - 修剪作业完成后，必须上传完工照片
 - 未上传完工照片的申请，无法执行关闭操作
+- 即使完成签收流程，未上传完工照片仍不能关闭许可
+
+### 4. 签收确认规则
+- 施工单位完成作业后提交签收确认（SIGN_OFF_SUBMITTED）
+- 街道审核员现场核查并记录到场时间（ARRIVAL_RECORDED）
+- 园林专家可要求补充完工照片（PHOTO_SUPPLEMENT_REQUESTED）
+- 补充照片后需重新提交签收并记录到场时间
+- 所有签收流程状态下，未上传完工照片均不能关闭许可
 
 ## 技术栈
 
@@ -44,38 +52,218 @@ mvn spring-boot:run
 - 用户名: `sa`
 - 密码: （空）
 
+## API 接口列表
+
+### 树木档案管理
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /trees | 查询所有树木档案 |
+| GET | /trees/{id} | 查询单棵树木详情 |
+
+### 修剪申请管理
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | /applications | 提交修剪申请 |
+| GET | /applications | 查询申请列表 |
+| GET | /applications/{id} | 查询申请详情 |
+| POST | /applications/{id}/street-audit | 街道审核 |
+| POST | /applications/{id}/expert-audit | 专家审批 |
+| POST | /applications/{id}/start-construction | 开始施工 |
+| POST | /applications/{id}/complete-construction | 完成施工 |
+| POST | /applications/{id}/submit-signoff | 提交签收确认 |
+| POST | /applications/{id}/record-arrival | 记录到场时间 |
+| POST | /applications/{id}/request-photo-supplement | 要求补充照片 |
+| POST | /applications/{id}/photos | 上传完工照片 |
+| POST | /applications/{id}/close | 关闭许可 |
+
+## API 请求示例
+
+### 1. 提交修剪申请
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications \
+  -H "Content-Type: application/json" \
+  -d '{
+    "treeCode": "TR001",
+    "applicant": "李工",
+    "maintenanceUnit": "城维养护公司",
+    "pruningReason": "树冠过密影响采光",
+    "pruningScheme": "疏剪过密枝条",
+    "plannedStartDate": "2026-06-12",
+    "plannedEndDate": "2026-06-14",
+    "occupyRoad": true,
+    "roadSection": "中山路-东段"
+  }'
+```
+
+### 2. 街道审核
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/street-audit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auditor": "王审核",
+    "approved": true,
+    "opinion": "情况属实，同意修剪"
+  }'
+```
+
+### 3. 提交签收确认（施工单位）
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/submit-signoff \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signOffPerson": "张施工",
+    "rejectReason": ""
+  }'
+```
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "message": "签收提交成功",
+  "data": {
+    "id": 1,
+    "applicationNo": "PR2026060001",
+    "status": "SIGN_OFF_SUBMITTED",
+    "signOffPerson": "张施工",
+    "signOffTime": "2026-06-15T10:30:00",
+    "arrivalTime": null,
+    "signOffRejectReason": null
+  }
+}
+```
+
+### 4. 记录到场时间（街道审核员）
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/record-arrival
+```
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "message": "到场时间记录成功",
+  "data": {
+    "id": 1,
+    "status": "ARRIVAL_RECORDED",
+    "signOffPerson": "张施工",
+    "arrivalTime": "2026-06-15T11:00:00",
+    "signOffRejectReason": null
+  }
+}
+```
+
+### 5. 要求补充完工照片（园林专家）
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/request-photo-supplement \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signOffPerson": "",
+    "rejectReason": "完工照片不清晰，请重新上传修剪后整体效果照片"
+  }'
+```
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "message": "已要求补充照片",
+  "data": {
+    "id": 1,
+    "status": "PHOTO_SUPPLEMENT_REQUESTED",
+    "signOffPerson": "张施工",
+    "signOffRejectReason": "完工照片不清晰，请重新上传修剪后整体效果照片"
+  }
+}
+```
+
+### 6. 上传完工照片
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/photos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "photoUrl": "https://example.com/photos/completion_001.jpg",
+    "description": "修剪后整体效果",
+    "uploader": "张工"
+  }'
+```
+
+### 7. 查询申请详情（含状态、签收人、拒绝原因）
+```bash
+curl http://localhost:8080/api/pruning/applications/1
+```
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "applicationNo": "PR2026060001",
+    "status": "ARRIVAL_RECORDED",
+    "applicant": "李工",
+    "treeCode": "TR001",
+    "signOffPerson": "张施工",
+    "signOffTime": "2026-06-15T10:30:00",
+    "arrivalTime": "2026-06-15T11:00:00",
+    "signOffRejectReason": null,
+    "hasCompletionPhoto": true
+  }
+}
+```
+
+### 8. 关闭许可（需已上传完工照片）
+```bash
+curl -X POST http://localhost:8080/api/pruning/applications/1/close
+```
+
+**未上传照片时的错误响应：**
+```json
+{
+  "success": false,
+  "message": "未上传完工照片，不能关闭许可"
+}
+```
+
 ## 验收路径说明
 
 ### 验收场景：提交古树修剪申请并验证进入专家审批
 
-**操作步骤：**
+1. 查询树木档案，获取古树编号（如 TR003）
+2. 提交该古树的修剪申请
+3. 验证申请状态自动变为 EXPERT_APPROVAL（专家审批）
+4. 查询待专家审批的申请列表，验证包含该申请
 
-1. 启动应用服务
-2. 提交古树（TR003）修剪申请：
-   - 调用 `POST /api/pruning/applications`
-   - 请求体包含 `treeCode: "TR003"`（该树为古树名木）
-3. **预期结果**：
-   - 返回状态码 200
-   - 响应数据中 `status` 字段值为 `EXPERT_APPROVAL`
-4. 查询待专家审批列表：
-   - 调用 `GET /api/pruning/applications/expert/pending`
-   - 验证刚才提交的申请出现在列表中
+### 验收场景：签收确认流程验证
 
-## API 接口列表
+1. 提交普通树木修剪申请并通过街道审核
+2. 开始施工、完成施工
+3. 施工单位提交签收确认，状态变为 SIGN_OFF_SUBMITTED
+4. **验证关键：此时尝试关闭许可，因未上传完工照片应被拒绝**
+5. 街道审核员记录到场时间，状态变为 ARRIVAL_RECORDED
+6. **验证关键：此时再次尝试关闭许可，仍因未上传照片被拒绝**
+7. 园林专家要求补充照片，状态变为 PHOTO_SUPPLEMENT_REQUESTED
+8. 上传完工照片
+9. 重新提交签收并记录到场时间
+10. 关闭许可成功，状态变为 CLOSED
+11. 查询申请详情，验证返回状态、签收人和拒绝原因
 
-| 接口路径 | 方法 | 说明 |
-|---------|------|------|
-| `/api/pruning/trees` | GET | 查询所有树木档案 |
-| `/api/pruning/trees/{code}` | GET | 根据编码查询单株树木 |
-| `/api/pruning/applications` | POST | 提交修剪申请 |
-| `/api/pruning/applications` | GET | 查询所有申请 |
-| `/api/pruning/applications/{id}` | GET | 根据ID查询申请详情 |
-| `/api/pruning/applications/expert/pending` | GET | 查询待专家审批列表 |
-| `/api/pruning/applications/{id}/expert/audit` | POST | 专家审批 |
-| `/api/pruning/applications/{id}/dept/audit` | POST | 部门审批 |
-| `/api/pruning/applications/{id}/construct` | POST | 开始施工 |
-| `/api/pruning/applications/{id}/photo` | POST | 上传完工照片 |
-| `/api/pruning/applications/{id}/close` | POST | 关闭申请 |
+## 验证脚本
+
+项目提供了自动化验证脚本 `verify.sh`，可一次性验证所有核心业务规则：
+
+```bash
+chmod +x verify.sh
+./verify.sh
+```
+
+脚本将依次验证：
+- 古树自动进入专家审批
+- 普通树木进入街道审核
+- 占道施工时间冲突拒绝
+- 未上传完工照片不能关闭许可（含签收流程各阶段验证）
+- 签收确认全流程
+- 查询详情返回状态、签收人和拒绝原因
 
 ## 初始化数据说明
 

@@ -4,6 +4,7 @@ import com.municipal.tree.dto.ApiResponse;
 import com.municipal.tree.dto.AuditRequest;
 import com.municipal.tree.dto.CompletionPhotoRequest;
 import com.municipal.tree.dto.PruningApplicationRequest;
+import com.municipal.tree.dto.SignOffRequest;
 import com.municipal.tree.entity.*;
 import com.municipal.tree.service.PruningApplicationService;
 import org.springframework.web.bind.annotation.*;
@@ -71,6 +72,24 @@ public class PruningApplicationController {
     @PostMapping("/applications/{id}/complete-construction")
     public ApiResponse<PruningApplication> completeConstruction(@PathVariable Long id) {
         PruningApplication application = pruningApplicationService.completeConstruction(id);
+        return ApiResponse.success(application);
+    }
+
+    @PostMapping("/applications/{id}/submit-signoff")
+    public ApiResponse<PruningApplication> submitSignOff(@PathVariable Long id, @RequestBody SignOffRequest request) {
+        PruningApplication application = pruningApplicationService.submitSignOff(id, request);
+        return ApiResponse.success(application);
+    }
+
+    @PostMapping("/applications/{id}/record-arrival")
+    public ApiResponse<PruningApplication> recordArrivalTime(@PathVariable Long id) {
+        PruningApplication application = pruningApplicationService.recordArrivalTime(id);
+        return ApiResponse.success(application);
+    }
+
+    @PostMapping("/applications/{id}/request-photo-supplement")
+    public ApiResponse<PruningApplication> requestPhotoSupplement(@PathVariable Long id, @RequestBody SignOffRequest request) {
+        PruningApplication application = pruningApplicationService.requestPhotoSupplement(id, request);
         return ApiResponse.success(application);
     }
 

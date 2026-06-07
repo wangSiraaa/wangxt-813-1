@@ -8,5 +8,8 @@ public enum ApplicationStatus {
     REJECTED,
     IN_CONSTRUCTION,
     COMPLETED,
+    SIGN_OFF_SUBMITTED,
+    ARRIVAL_RECORDED,
+    PHOTO_SUPPLEMENT_REQUESTED,
     CLOSED
 }

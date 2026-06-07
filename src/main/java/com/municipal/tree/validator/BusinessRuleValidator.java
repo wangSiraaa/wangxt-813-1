@@ -45,8 +45,9 @@ public class BusinessRuleValidator {
     }
 
     public void validateClosePermission(PruningApplication application) {
-        if (application.getStatus() != ApplicationStatus.COMPLETED) {
-            throw new BusinessException(400, "只有已完成状态的申请才能关闭");
+        if (application.getStatus() != ApplicationStatus.COMPLETED &&
+            application.getStatus() != ApplicationStatus.ARRIVAL_RECORDED) {
+            throw new BusinessException(400, "只有已完成或已记录到场的申请才能关闭");
         }
         List<CompletionPhoto> photos = completionPhotoRepository.findByApplicationId(application.getId());
         if (photos == null || photos.isEmpty()) {

@@ -58,14 +58,6 @@ public class PruningApplication {
 
     private LocalDateTime closeTime;
 
-    private String signOffPerson;
-
-    private LocalDateTime signOffTime;
-
-    private LocalDateTime arrivalTime;
-
-    private String signOffRejectReason;
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getApplicationNo() { return applicationNo; }
@@ -112,12 +104,4 @@ public class PruningApplication {
     public void setConstructionEndTime(LocalDateTime constructionEndTime) { this.constructionEndTime = constructionEndTime; }
     public LocalDateTime getCloseTime() { return closeTime; }
     public void setCloseTime(LocalDateTime closeTime) { this.closeTime = closeTime; }
-    public String getSignOffPerson() { return signOffPerson; }
-    public void setSignOffPerson(String signOffPerson) { this.signOffPerson = signOffPerson; }
-    public LocalDateTime getSignOffTime() { return signOffTime; }
-    public void setSignOffTime(LocalDateTime signOffTime) { this.signOffTime = signOffTime; }
-    public LocalDateTime getArrivalTime() { return arrivalTime; }
-    public void setArrivalTime(LocalDateTime arrivalTime) { this.arrivalTime = arrivalTime; }
-    public String getSignOffRejectReason() { return signOffRejectReason; }
-    public void setSignOffRejectReason(String signOffRejectReason) { this.signOffRejectReason = signOffRejectReason; }
 }
