@@ -4,9 +4,9 @@ import com.municipal.tree.entity.ConstructionSection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ConstructionSectionRepository extends JpaRepository<ConstructionSection, Long> {
-    Optional<ConstructionSection> findBySectionName(String sectionName);
+    List<ConstructionSection> findByCurrentApplicationNo(String applicationNo);
 }

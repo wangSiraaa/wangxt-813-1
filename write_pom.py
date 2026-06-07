@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+#!/usr/bin/env python3
+
+pom_content = '''<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -56,3 +58,9 @@
         </plugins>
     </build>
 </project>
+'''
+
+with open('pom.xml', 'w', encoding='utf-8') as f:
+    f.write(pom_content)
+
+print("pom.xml 已成功写入！")

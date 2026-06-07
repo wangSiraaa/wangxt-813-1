@@ -69,7 +69,7 @@ public class PruningApplicationController {
     }
 
     @PostMapping("/applications/{id}/complete-construction")
-    public ApiResponse<PruningApplication> completeConstruction(@@PathVariable Long id) {
+    public ApiResponse<PruningApplication> completeConstruction(@PathVariable Long id) {
         PruningApplication application = pruningApplicationService.completeConstruction(id);
         return ApiResponse.success(application);
     }

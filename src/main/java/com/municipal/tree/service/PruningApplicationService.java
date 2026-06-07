@@ -42,28 +42,28 @@ public class PruningApplicationService {
     }
 
     public PruningApplication submitApplication(PruningApplicationRequest request) {
-        Tree tree = treeRepository.findById(request.getTreeId())
+        Tree tree = treeRepository.findByTreeCode(request.getTreeCode())
                 .orElseThrow(() -> new BusinessException(404, "树木不存在"));
 
-        if (request.getRoadOccupationRequired()) {
+        if (request.getOccupyRoad()) {
             businessRuleValidator.validateRoadOccupationConflict(
                     request.getRoadSection(),
-                    request.getConstructionStartDate(),
-                    request.getConstructionEndDate(),
+                    request.getPlannedStartDate(),
+                    request.getPlannedEndDate(),
                     null
             );
         }
 
         PruningApplication application = new PruningApplication();
         application.setTreeId(tree.getId());
-        application.setApplicantName(request.getApplicantName());
-        application.setApplicantPhone(request.getApplicantPhone());
+        application.setApplicant(request.getApplicant());
+        application.setMaintenanceUnit(request.getMaintenanceUnit());
         application.setPruningReason(request.getPruningReason());
-        application.setPruningDescription(request.getPruningDescription());
-        application.setRoadOccupationRequired(request.getRoadOccupationRequired());
+        application.setPruningScheme(request.getPruningScheme());
+        application.setOccupyRoad(request.getOccupyRoad());
         application.setRoadSection(request.getRoadSection());
-        application.setConstructionStartDate(request.getConstructionStartDate());
-        application.setConstructionEndDate(request.getConstructionEndDate());
+        application.setPlannedStartDate(request.getPlannedStartDate());
+        application.setPlannedEndDate(request.getPlannedEndDate());
 
         String applicationNo = "PRU" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         application.setApplicationNo(applicationNo);
@@ -78,13 +78,13 @@ public class PruningApplicationService {
 
         application = pruningApplicationRepository.save(application);
 
-        if (request.getRoadOccupationRequired()) {
+        if (request.getOccupyRoad()) {
             ConstructionSection section = new ConstructionSection();
-            section.setApplicationId(application.getId());
-            section.setRoadSection(request.getRoadSection());
-            section.setStartDate(request.getConstructionStartDate());
-            section.setEndDate(request.getConstructionEndDate());
-            section.setOccupied(true);
+            section.setSectionName(request.getRoadSection());
+            section.setOccupyStartDate(request.getPlannedStartDate());
+            section.setOccupyEndDate(request.getPlannedEndDate());
+            section.setCurrentApplicationNo(application.getApplicationNo());
+            section.setIsOccupied(true);
             constructionSectionRepository.save(section);
         }
 
@@ -108,14 +108,13 @@ public class PruningApplicationService {
 
         AuditRecord auditRecord = new AuditRecord();
         auditRecord.setApplicationId(applicationId);
-        auditRecord.setAuditorId(request.getAuditorId());
-        auditRecord.setAuditorName(request.getAuditorName());
-        auditRecord.setAuditResult(request.getAuditResult());
-        auditRecord.setAuditOpinion(request.getAuditOpinion());
+        auditRecord.setAuditor(request.getAuditor());
+        auditRecord.setApproved(request.getApproved());
+        auditRecord.setOpinion(request.getOpinion());
         auditRecord.setAuditTime(LocalDateTime.now());
         auditRecordRepository.save(auditRecord);
 
-        if ("APPROVED".equals(request.getAuditResult())) {
+        if (request.getApproved()) {
             application.setStatus(ApplicationStatus.APPROVED);
         } else {
             application.setStatus(ApplicationStatus.REJECTED);
@@ -134,14 +133,13 @@ public class PruningApplicationService {
 
         AuditRecord auditRecord = new AuditRecord();
         auditRecord.setApplicationId(applicationId);
-        auditRecord.setAuditorId(request.getAuditorId());
-        auditRecord.setAuditorName(request.getAuditorName());
-        auditRecord.setAuditResult(request.getAuditResult());
-        auditRecord.setAuditOpinion(request.getAuditOpinion());
+        auditRecord.setAuditor(request.getAuditor());
+        auditRecord.setApproved(request.getApproved());
+        auditRecord.setOpinion(request.getOpinion());
         auditRecord.setAuditTime(LocalDateTime.now());
         auditRecordRepository.save(auditRecord);
 
-        if ("APPROVED".equals(request.getAuditResult())) {
+        if (request.getApproved()) {
             application.setStatus(ApplicationStatus.APPROVED);
         } else {
             application.setStatus(ApplicationStatus.REJECTED);
@@ -184,6 +182,7 @@ public class PruningApplicationService {
         photo.setApplicationId(applicationId);
         photo.setPhotoUrl(request.getPhotoUrl());
         photo.setDescription(request.getDescription());
+        photo.setUploader(request.getUploader());
         photo.setUploadTime(LocalDateTime.now());
         return completionPhotoRepository.save(photo);
     }
@@ -201,11 +200,13 @@ public class PruningApplicationService {
         application.setStatus(ApplicationStatus.CLOSED);
         application.setCloseTime(LocalDateTime.now());
 
-        if (application.getRoadOccupationRequired()) {
-            List<ConstructionSection> sections = constructionSectionRepository.findByApplicationId(applicationId);
+        if (application.getOccupyRoad()) {
+            List<ConstructionSection> sections = constructionSectionRepository.findAll();
             for (ConstructionSection section : sections) {
-                section.setOccupied(false);
-                constructionSectionRepository.save(section);
+                if (application.getApplicationNo().equals(section.getCurrentApplicationNo())) {
+                    section.setIsOccupied(false);
+                    constructionSectionRepository.save(section);
+                }
             }
         }
 
@@ -218,8 +219,7 @@ public class PruningApplicationService {
     }
 
     public PruningApplication getApplicationByNo(String applicationNo) {
-        return pruningApplicationRepository.findByApplicationNo(applicationNo)
-                .orElseThrow(() -> new BusinessException(404, "申请不存在"));
+        return pruningApplicationRepository.findByApplicationNo(applicationNo);
     }
 
     public List<PruningApplication> getAllApplications() {

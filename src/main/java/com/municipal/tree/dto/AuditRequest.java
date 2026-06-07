@@ -2,15 +2,18 @@ package com.municipal.tree.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-@Data
 public class AuditRequest {
-    @NotBlank(message = "审核人不能为空")
+    @NotBlank
     private String auditor;
-
-    @NotNull(message = "审核结果不能为空")
+    @NotNull
     private Boolean approved;
-
     private String opinion;
+
+    public String getAuditor() { return auditor; }
+    public void setAuditor(String auditor) { this.auditor = auditor; }
+    public Boolean getApproved() { return approved; }
+    public void setApproved(Boolean approved) { this.approved = approved; }
+    public String getOpinion() { return opinion; }
+    public void setOpinion(String opinion) { this.opinion = opinion; }
 }

@@ -1,15 +1,18 @@
 package com.municipal.tree.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
 public class CompletionPhotoRequest {
-    @NotBlank(message = "照片URL不能为空")
+    @NotBlank
     private String photoUrl;
-
     private String description;
-
-    @NotBlank(message = "上传人不能为空")
+    @NotBlank
     private String uploader;
+
+    public String getPhotoUrl() { return photoUrl; }
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getUploader() { return uploader; }
+    public void setUploader(String uploader) { this.uploader = uploader; }
 }
